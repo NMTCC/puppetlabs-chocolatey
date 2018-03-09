@@ -196,15 +196,17 @@ describe provider do
     element_priority = "10"
     element_user = "thisguy"
     element_password = "super/encrypted+value=="
+    element_selfService = "true"
 
 
     before :each do
-      element.add_attributes( { "id"        => element_id,
-                                "value"     => element_value,
-                                "disabled"  => element_disabled,
-                                "priority"  => element_priority,
-                                "user"      => element_user,
-                                "password"  => element_password
+      element.add_attributes( { "id"     => element_id,
+                                "value"        => element_value,
+                                "disabled"     => element_disabled,
+                                "priority"     => element_priority,
+                                "user"         => element_user,
+                                "password"     => element_password,
+                                "selfService"  => element_selfService
                               } )
     end
 
@@ -219,6 +221,7 @@ describe provider do
       source[:location].must eq element_value
       source[:priority].must eq element_priority
       source[:user].must eq element_user
+      source[:selfService].must eq element_selfService
       source[:ensure].must eq :present
     end
 
@@ -227,6 +230,7 @@ describe provider do
       element.delete_attribute('priority')
       element.delete_attribute('user')
       element.delete_attribute('password')
+      element.delete_attribute('selfService')
 
       source = provider.get_source(element)
 
@@ -241,6 +245,13 @@ describe provider do
 
       source = provider.get_source(element)
       source[:ensure].must eq :disabled
+    end
+    it "when source is not selfservice" do
+      element.delete_atribute('selfService')
+      element.add_attribute('selfService', 'false')
+
+      source = provider.get_source(element)
+      source[:ensure].must eq [:present]
     end
   end
 
@@ -293,6 +304,56 @@ describe provider do
 
       PuppetX::Chocolatey::ChocolateyCommon.expects(:choco_version).returns(minimum_supported_version)
       Puppet.expects(:warning).never
+
+      resource.provider.validate
+    end
+
+    it "should not warn if selfService is not set" do
+      PuppetX::Chocolatey::ChocolateyCommon.expects(:choco_version).returns(newer_choco_version)
+      Puppet.expects(:warning).never
+
+      resource.provider.validate
+    end
+
+    it "should not warn if selfService is set to false on unsupported versions" do
+      resource[:selfService] = 'false'
+
+      PuppetX::Chocolatey::ChocolateyCommon.expects(:choco_version).returns(last_unsupported_version_selfService)
+      Puppet.expects(:warning).never
+
+      resource.provider.validate
+    end
+
+    it "should not warn if selfService is not set on older unsupported versions" do
+      PuppetX::Chocolatey::ChocolateyCommon.expects(:choco_version).returns(last_unsupported_version_selfService)
+      Puppet.expects(:warning).never
+
+      resource.provider.validate
+    end
+
+    it "should not warn on selfService when choco version is newer than the minimum supported version" do
+      resource[:selfServcie] = 'true'
+
+      PuppetX::Chocolatey::ChocolateyCommon.expects(:choco_version).returns(newer_choco_version)
+      Puppet.expects(:warning).never
+
+      resource.provider.validate
+    end
+
+    it "should not warn on selfService when choco version is the minimum supported version" do
+      resource[:priority] = 10
+
+      PuppetX::Chocolatey::ChocolateyCommon.expects(:choco_version).returns(minimum_supported_version_selfService)
+      Puppet.expects(:warning).never
+
+      resource.provider.validate
+    end
+
+    it "should warn on selfService when choco version is less than the minimum supported version" do
+      resource[:priority] = 10
+
+      PuppetX::Chocolatey::ChocolateyCommon.expects(:choco_version).returns(last_unsupported_version_selfService)
+      Puppet.expects(:warning).with("Chocolatey is unable to manage selfService for sources when version is less than 0.10.4.0. The value you set will be ignored.")
 
       resource.provider.validate
     end
@@ -374,6 +435,7 @@ describe provider do
     resource_priority = 10
     resource_user = "thatguy"
     resource_password = "secrets!"
+    resource_selfService = "true"
 
     before :each do
       PuppetX::Chocolatey::ChocolateyCommon.expects(:set_env_chocolateyinstall).at_most_once
@@ -407,6 +469,7 @@ describe provider do
       resource[:priority] = resource_priority
       resource[:user] = resource_user
       resource[:password] = resource_password
+      resource[:selfService] = resource_selfService
 
       PuppetX::Chocolatey::ChocolateyCommon.expects(:choco_version).returns(newer_choco_version)
       Puppet::Util::Execution.expects(:execute).with([provider.command(:chocolatey),
@@ -416,6 +479,7 @@ describe provider do
                                                       '--user', resource_user,
                                                       '--password', resource_password,
                                                       '--priority', resource_priority,
+                                                      '--allow-self-service'
                                                      ])
 
       Puppet::Util::Execution.expects(:execute).with([provider.command(:chocolatey),

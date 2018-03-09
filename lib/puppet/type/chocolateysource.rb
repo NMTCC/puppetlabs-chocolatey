@@ -125,10 +125,10 @@ Puppet::Type.newtype(:chocolateysource) do
       defaults to false"
 
     validate do |value|
-      raise ArgumentError, "SelfService only takes boolean values" unless resource.is_boolean?(value)
+      raise ArgumentError, 'Self services requires the value to be either true or false' unless value.equal?('true') || value.equal?('false')
     end
 
-    defaultto false
+    defaultto 'false'
   end
 
   autorequire(:exec) do

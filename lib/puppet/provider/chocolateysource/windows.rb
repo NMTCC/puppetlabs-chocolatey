@@ -11,7 +11,7 @@ Puppet::Type.type(:chocolateysource).provide(:windows) do
 
   MINIMUM_SUPPORTED_CHOCO_VERSION = '0.9.9.0'
   MINIMUM_SUPPORTED_CHOCO_VERSION_PRIORITY = '0.9.9.9'
-
+  MINIMUM_SUPPORTED_CHOCO_VERSION_SELFSERVICE = '0.10.4.0'
   commands :chocolatey => PuppetX::Chocolatey::ChocolateyCommon.chocolatey_command
 
   def initialize(value={})
@@ -66,7 +66,7 @@ Puppet::Type.type(:chocolateysource).provide(:windows) do
     source[:user] = ''
     source[:user] = element.attributes['user'].downcase if element.attributes['user']
 
-    source[:selfService] = false
+    source[:selfService] = 'false'
     source[:selfService] = element.attributes['selfService'].downcase if element.attributes['selfService']
 
     Puppet.debug("Loaded source '#{source.inspect}'.")
@@ -124,6 +124,10 @@ Puppet::Type.type(:chocolateysource).provide(:windows) do
       Puppet.warning("Chocolatey is unable to manage priority for sources when version is less than #{MINIMUM_SUPPORTED_CHOCO_VERSION_PRIORITY}. The value you set will be ignored.")
     end
 
+    if choco_version < Gem::Version.new(MINIMUM_SUPPORTED_CHOCO_VERSION_SELFSERVICE) && resource[:selfService] && resource[:selfService] != 'false'
+      Puppet.warning("Chocolatey is unable to manage selfService for sources when version is less than #{MINIMUM_SUPPORTED_CHOCO_VERSION_SELFSERVICE}. The value you set will be ignored.")
+    end
+
     # location is always filled in with puppet resource, but
     # resource[:location] is always empty (because it has a different
     # code path where validation occurs before all properties/params
@@ -175,8 +179,10 @@ Puppet::Type.type(:chocolateysource).provide(:windows) do
       if choco_gem_version >= Gem::Version.new(MINIMUM_SUPPORTED_CHOCO_VERSION_PRIORITY)
         args << '--priority' << resource[:priority]
       end
-      if resource[:selfService]
-        args << '--allow-self-service'
+      if choco_gem_version >= Gem::Version.new(MINIMUM_SUPPORTED_CHOCO_VERSION_SELFSERVICE)
+        if resource[:selfService].equal?('true')
+          args << '--allow-self-service'
+        end
       end
     end
 
