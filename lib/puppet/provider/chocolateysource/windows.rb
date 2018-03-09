@@ -66,8 +66,8 @@ Puppet::Type.type(:chocolateysource).provide(:windows) do
     source[:user] = ''
     source[:user] = element.attributes['user'].downcase if element.attributes['user']
 
-    source[:selfservice] = false
-    source[:selfservice] = element.attributes['selfservice'].downcase if element.attributes['slefservice']
+    source[:selfService] = false
+    source[:selfService] = element.attributes['selfService'].downcase if element.attributes['selfService']
 
     Puppet.debug("Loaded source '#{source.inspect}'.")
 
