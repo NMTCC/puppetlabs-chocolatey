@@ -175,6 +175,9 @@ Puppet::Type.type(:chocolateysource).provide(:windows) do
       if choco_gem_version >= Gem::Version.new(MINIMUM_SUPPORTED_CHOCO_VERSION_PRIORITY)
         args << '--priority' << resource[:priority]
       end
+      if resource[:selfService]
+        args << '--allow-self-service'
+      end
     end
 
     begin
