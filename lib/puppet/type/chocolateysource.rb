@@ -117,6 +117,20 @@ Puppet::Type.newtype(:chocolateysource) do
     end
   end
 
+
+  newproperty(:selfservice) do
+    desc "Optional boolean value to enable self service
+      on source. Takes true or false as value.
+      Requires business edition v1.10.0.
+      defaults to false"
+
+    validate do |value|
+      raise ArgumentError, "SelfService only takes boolean values" unless resource.is_boolean?(value)
+    end
+
+    defaultto false
+  end
+
   autorequire(:exec) do
     ['install_chocolatey_official']
   end
