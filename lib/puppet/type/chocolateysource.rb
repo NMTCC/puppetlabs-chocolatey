@@ -118,7 +118,7 @@ Puppet::Type.newtype(:chocolateysource) do
   end
 
 
-  newproperty(:selfService) do
+  newparam(:selfService) do
     desc "Optional boolean value to enable self service
       on source. Takes true or false as value.
       Requires business edition v1.10.0.
